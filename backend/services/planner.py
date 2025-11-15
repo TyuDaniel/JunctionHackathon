@@ -1,15 +1,24 @@
 """
 Mathematical Charging Planner
 Calculates optimal charging plan based on vehicle state, trip requirements, and charger capabilities
+Now with Battery Birth Certificate (BBC) awareness for lifecycle-informed charging
 """
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Dict
 from backend.schemas.did import VehicleDID, ChargerDID, DriverPreferences
 from backend.schemas.session import ChargingPlan, TripDetails, IncentiveOffer
 
 
 SAFETY_BUFFER = 1.2  # 20% extra energy for safety
 EFFICIENCY_FACTOR = 0.85  # 85% charging efficiency (heat loss, etc.)
+
+# Battery lifecycle C-rate limits (for battery health protection)
+LIFECYCLE_CRATE_LIMITS = {
+    "IN USE": 1.5,  # New batteries can handle faster charging
+    "SECOND_LIFE": 0.7,  # Degraded batteries need gentler charging
+    "END_OF_LIFE": 0.3,  # Very limited charging
+    "UNKNOWN": 1.0  # Conservative default
+}
 
 
 def calculate_charging_plan(
@@ -18,10 +27,12 @@ def calculate_charging_plan(
     charger: ChargerDID,
     driver_preferences: DriverPreferences,
     forecasted_demand: Optional[float] = None,
-    site_capacity: Optional[float] = None
+    site_capacity: Optional[float] = None,
+    bbc_claims: Optional[Dict] = None
 ) -> ChargingPlan:
     """
     Core mathematical planner that calculates the charging plan
+    Now with Battery Birth Certificate (BBC) awareness
     
     Args:
         vehicle: Vehicle DID with battery state and capabilities
@@ -30,10 +41,19 @@ def calculate_charging_plan(
         driver_preferences: Driver preferences for optimization
         forecasted_demand: Predicted demand at this site (kWh)
         site_capacity: Total site capacity (kW)
+        bbc_claims: Battery Birth Certificate claims from Denso DID Gateway
     
     Returns:
         ChargingPlan with all calculations and recommendations
     """
+    
+    # Extract BBC lifecycle status for battery-aware charging
+    lifecycle_status = "UNKNOWN"
+    cell_type = "Lithium-Ion"
+    if bbc_claims:
+        lifecycle_status = bbc_claims.get("lifeCycleStatus", "UNKNOWN")
+        cell_type = bbc_claims.get("cellType", "Lithium-Ion")
+        manufacturing_date = bbc_claims.get("manufacturingDate", "")
     
     # Step 1: Calculate energy needed for trip
     trip_distance_km = trip.distance_km
@@ -55,11 +75,19 @@ def calculate_charging_plan(
         target_energy = current_energy + extra_energy
         target_soc = min(100.0, (target_energy / vehicle.battery_capacity_kwh) * 100)
     
-    # Step 4: Calculate charging time
-    # Effective power is limited by both charger and vehicle, with efficiency factor
+    # Step 4: Calculate charging time with BBC-aware power limiting
+    # Get C-rate limit based on battery lifecycle status
+    crate_limit = LIFECYCLE_CRATE_LIMITS.get(lifecycle_status, 1.0)
+    
+    # Calculate max safe power for this battery based on lifecycle
+    # C-rate = power / capacity, so max_safe_power = crate * capacity
+    max_safe_power_kw = crate_limit * vehicle.battery_capacity_kwh
+    
+    # Effective power is limited by charger, vehicle, lifecycle, AND efficiency
     effective_power = min(
         charger.max_power_kw,
-        vehicle.max_charge_power_kw
+        vehicle.max_charge_power_kw,
+        max_safe_power_kw  # BBC-informed limit
     ) * EFFICIENCY_FACTOR
     
     if effective_power > 0 and extra_energy > 0:

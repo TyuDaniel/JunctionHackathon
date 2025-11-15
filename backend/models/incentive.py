@@ -17,5 +17,6 @@ class Incentive(Base):
 
     __table_args__ = (
         Index('idx_site_time_active', 'site_id', 'time_slot', 'active'),
+        {'extend_existing': True}
     )
 

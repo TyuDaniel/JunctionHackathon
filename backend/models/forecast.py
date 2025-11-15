@@ -18,5 +18,6 @@ class DemandForecast(Base):
 
     __table_args__ = (
         Index('idx_site_time', 'site_id', 'time_slot'),
+        {'extend_existing': True}
     )
 

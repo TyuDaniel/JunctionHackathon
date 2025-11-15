@@ -13,4 +13,5 @@ class Charger(Base):
     location_lat = Column(Float, nullable=False)
     location_lon = Column(Float, nullable=False)
     charger_type = Column(String, default="DC")  # AC or DC
+    __table_args__ = {'extend_existing': True}
 

@@ -54,4 +54,6 @@ class ChargingSession(Base):
     # Driver preferences
     driver_priority = Column(String, default="cost")  # cost, speed, carbon
     carbon_conscious = Column(Boolean, default=False)
+    
+    __table_args__ = {'extend_existing': True}
 

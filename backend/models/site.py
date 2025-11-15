@@ -12,4 +12,5 @@ class Site(Base):
     total_capacity_kw = Column(Float, nullable=False)
     site_type = Column(String, nullable=False)  # workplace, fleet_depot, retail
     charger_count = Column(Integer, default=0)
+    __table_args__ = {'extend_existing': True}
 

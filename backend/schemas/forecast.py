@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List
 from datetime import datetime
 
@@ -15,6 +15,7 @@ class ForecastResponse(BaseModel):
     site_id: str
     forecasts: List[HourlyForecast]
     model_version: str = Field(default="v1.0")
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class SiteAnalyticsResponse(BaseModel):
