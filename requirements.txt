@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 sqlalchemy==2.0.23
@@ -10,3 +11,17 @@ scikit-learn==1.3.2
 joblib==1.3.2
 python-multipart==0.0.6
 requests==2.31.0
+=======
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+pydantic-settings
+python-dotenv
+pandas
+numpy
+scikit-learn
+joblib
+python-multipart
+
+>>>>>>> dcb03a8b51026e9bbcb3333164d129f1fccee5dc
